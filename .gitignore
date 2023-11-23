@@ -2,3 +2,5 @@
 .env
 .request.http
 package-lock.json
+/uploads
+/images
