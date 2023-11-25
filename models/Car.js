@@ -68,6 +68,11 @@ const CarsSchema = new Schema({
     type: String,
     default: "Số tự động"
    },
+   status: {
+    type: String,
+    enum: ['active', 'deleted'],
+    default: "active"
+  },
 });
 
 module.exports = mongoose.model("Car", CarsSchema);

@@ -13,7 +13,12 @@ const BlogSchema = new Schema({
   },
   imageBlog: {
     type: String
-  }
+  },
+  status: {
+    type: String,
+    enum: ['active', 'deleted'],
+    default: "active"
+  },
 });
 
 module.exports = mongoose.model("Blog", BlogSchema);

@@ -66,6 +66,35 @@ router.get("/get-blog/:id", async (req, res) => {
     }
   });
 
+// API DELETE BLOG
+router.put("/delete-blog/:id", verifyToken, checkAdmin, async (req, res) => {
+  const blogId = req.params.id;
+  try {
+    const blog = await Blog.findById(blogId);
 
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy blog",
+      });
+    }
+    if (blog.status === 'deleted') {
+      return res.status(400).json({
+        success: false,
+        message: "Blog đã được đánh dấu là đã xóa trước đó",
+      });
+    }
+    blog.status = 'deleted';
+    const updatedBlog = await blog.save();
+    res.json({
+      success: true,
+      message: "Blog đã được đánh dấu là đã xóa",
+      category: updatedBlog,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
+  }
+});
 
 module.exports = router;

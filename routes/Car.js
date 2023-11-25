@@ -41,7 +41,7 @@ router.post(
       star,
       tax2,
       model,
-      
+      chair
     } = req.body;
     if (!title || !description || !price || !location || !model)
       return res.status(400).json({
@@ -73,6 +73,7 @@ router.post(
         image1,
         image2,
         image3,
+        chair,
         categoryID: category._id,
         categoryModel: category.model,
       });
@@ -115,4 +116,105 @@ router.get("/get-car/:id", async (req, res) => {
       .json({ success: false, message: "Lỗi Server! Liên Hệ Admin" });
   }
 });
+
+
+// API EDIT CAR
+router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
+  const carId = req.params.id; 
+
+  const {
+    title,
+    description,
+    price,
+    location,
+    imagePath,
+    image1,
+    image2,
+    image3,
+    tax,
+    usage,
+    flash,
+    star,
+    tax2,
+    chair,
+    model,
+  } = req.body;
+
+  try {
+    const car = await Car.findById(carId);
+
+    if (!car) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe",
+      });
+    }
+
+    car.title = title || car.title;
+    car.description = description || car.description;
+    car.price = price || car.price;
+    car.location = location || car.location;
+    car.imagePath = imagePath || car.imagePath;
+    car.image1 = image1 || car.image1;
+    car.image2 = image2 || car.image2;
+    car.image3 = image3 || car.image3;
+    car.tax = tax || car.tax;
+    car.usage = usage || car.usage;
+    car.flash = flash || car.flash;
+    car.star = star || car.star;
+    car.tax2 = tax2 || car.tax2;
+    car.model = model || car.model;
+    car.chair = chair || car.chair;
+
+  
+    const updatedCar = await car.save();
+
+    res.json({
+      success: true,
+      message: "Thông tin của xe đã được cập nhật",
+      car: updatedCar,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
+  }
+});
+
+// API DELETE CAR
+router.put("/delete-car/:id", verifyToken, checkAdmin, async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const car = await Car.findById(carId);
+
+    if (!car) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe",
+      });
+    }
+
+    if (car.status === 'deleted') {
+      return res.status(400).json({
+        success: false,
+        message: "Xe đã được đánh dấu là đã xóa trước đó",
+      });
+    }
+
+    car.status = 'deleted';
+
+    const updatedCar = await car.save();
+
+    res.json({
+      success: true,
+      message: "Xe đã được đánh dấu là đã xóa",
+      car: updatedCar,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
+  }
+});
+
+
 module.exports = router;
