@@ -2,6 +2,6 @@
 .env
 .request.http
 package-lock.json
-/uploads
-/images
+uploads
+images
 .gitignore
