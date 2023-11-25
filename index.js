@@ -9,6 +9,7 @@ const userRouter = require("./routes/User");
 const reviewRouter = require("./routes/Review");
 const avatarRouter = require("./routes/Image");
 const blogRouter = require("./routes/Blog");
+const categoryRouter = require("./routes/Category");
 // Khai báo database
 const connectDB = async () => {
   try {
@@ -44,6 +45,9 @@ app.use("/", avatarRouter);
 
 // API BLOG
 app.use("/", blogRouter);
+
+// API CATEGORY
+app.use("/", categoryRouter);
 
 // API SERVER
 app.listen(process.env.PORT, () => {

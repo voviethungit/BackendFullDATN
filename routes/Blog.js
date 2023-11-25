@@ -53,7 +53,7 @@ router.get("/get-blog", async (req, res) => {
 });
   
   // API GET ID blog
-  router.get("/get-blog/:id", async (req, res) => {
+router.get("/get-blog/:id", async (req, res) => {
     try {
       const blog = await Blog.findById(req.params.id);
       if (!blog) {
