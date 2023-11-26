@@ -65,7 +65,22 @@ const UserSchema = new Schema({
   },
   GPLX:{
     type: String,
+  },
+  amount: {
+    type: Number,
+    default: "0"
   }
 });
+UserSchema.methods.depositAmount = function(amountToDeposit) {
+  const amount = parseFloat(amountToDeposit);
+
+  if (isNaN(amount) || amount <= 10000) {
+    throw new Error("Số tiền nạp không hợp lệ");
+  }
+
+  this.amount += amount; 
+
+  return this.save(); 
+};
 
 module.exports = mongoose.model("User", UserSchema);

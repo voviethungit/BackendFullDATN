@@ -21,7 +21,7 @@ router.get("/getAllUser", async (req, res) => {
 // API GET USERDetail
 router.get("/getProfile", verifyToken, async (req, res) => {
   try {
-    // Sử dụng req.user để lấy thông tin người dùng từ token
+   
     const user = await User.findById(req.userId).select("-password");
 
     if (!user) {
@@ -30,7 +30,6 @@ router.get("/getProfile", verifyToken, async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Trả về thông tin người dùng
     res.json({ success: true, user });
   } catch (error) {
     console.log(error);
