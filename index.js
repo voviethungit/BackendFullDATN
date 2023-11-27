@@ -12,6 +12,7 @@ const blogRouter = require("./routes/Blog");
 const categoryRouter = require("./routes/Category");
 const paymentRouter = require("./routes/Payment");
 const billRouter = require("./routes/Bill");
+const verifyUserRouter = require("./routes/VerifyUser");
 // Khai báo database
 const connectDB = async () => {
   try {
@@ -54,6 +55,9 @@ app.use("/", paymentRouter);
 
 // API HOA DON
 app.use("/", billRouter);
+
+// API GPLX
+app.use("/", verifyUserRouter);
 
 // API SERVER
 app.listen(process.env.PORT, () => {

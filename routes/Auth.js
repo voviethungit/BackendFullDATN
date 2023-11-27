@@ -8,8 +8,7 @@ const multer = require("multer");
 const verifyToken = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
-const serviceAccount = require("../firebase/SDK_HungDev.json");
-
+const imageRoutes = require('./Image');
 
 // verify-middleware
 router.get("/", verifyToken, async (req, res) => {
@@ -26,45 +25,9 @@ router.get("/", verifyToken, async (req, res) => {
     }
   });
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: "images-87aa0.appspot.com",
-});
+  router.use('/images', imageRoutes);
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-router.post("/register", upload.single("image"), async (req, res) => {
-  const file = req.file;
-  if (!file) {
-    return res.status(400).json({
-      success: false,
-      message: "Vui lòng chọn ảnh để tải lên!",
-    });
-  }
-
-  try {
-    const bucket = admin.storage().bucket();
-    const imageFileName = `${Date.now()}_${file.originalname}`;
-    const fileUpload = bucket.file(imageFileName);
-
-    const blobStream = fileUpload.createWriteStream({
-      metadata: {
-        contentType: file.mimetype,
-      },
-    });
-
-    blobStream.on("error", (error) => {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Lỗi khi tải ảnh lên Firebase Storage!",
-      });
-    });
-
-    blobStream.on("finish", async () => {
-      const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}`;
-
+router.post("/register", async (req, res) => {
       const { fullName, password, email, location, phoneNumber } = req.body;
 
       if (!fullName || !password || !email || !phoneNumber || !location) {
@@ -91,7 +54,6 @@ router.post("/register", upload.single("image"), async (req, res) => {
           password: hashedPassword,
           email,
           phoneNumber,
-          avatar: imageUrl, 
           location,
         });
 
@@ -105,19 +67,8 @@ router.post("/register", upload.single("image"), async (req, res) => {
         res.json({
           success: true,
           message: "Tạo tài khoản thành công!",
-          imageUrl: imageUrl,
           accessToken,
         });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({
-          success: false,
-          message: "Lỗi từ phía server!",
-        });
-      }
-    });
-
-    blobStream.end(file.buffer);
   } catch (error) {
     console.error(error);
     res.status(500).json({
