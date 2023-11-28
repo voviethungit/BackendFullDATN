@@ -28,7 +28,7 @@ router.get("/", verifyToken, async (req, res) => {
   router.use('/images', imageRoutes);
 
 router.post("/register", async (req, res) => {
-      const { fullName, password, email, location, phoneNumber } = req.body;
+      const { fullName, password, email, location, phoneNumber} = req.body;
 
       if (!fullName || !password || !email || !phoneNumber || !location) {
         return res.status(400).json({
@@ -118,6 +118,7 @@ router.post("/login", async (req, res) => {
         success: true,
         message: "Đăng Nhập Thành Công!",
         accessToken,
+        userId: user._id,
       });
     } catch (error) {
       console.log(error);

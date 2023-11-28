@@ -42,7 +42,7 @@ router.get("/getProfile", verifyToken, async (req, res) => {
 router.put("/edit-user/:id", verifyToken, async (req, res) => {
   try {
     const userId = req.params.id;
-    const { fullName, email, location, phoneNumber } = req.body;
+    const { fullName, email, location, birthDay, linkFB, avatar } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ success: false, message: "Khong tim thay user ID" });
@@ -52,7 +52,9 @@ router.put("/edit-user/:id", verifyToken, async (req, res) => {
       fullName,
       email,
       location,
-      phoneNumber,
+      birthDay,
+      linkFB,
+      avatar
     };
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -74,8 +76,8 @@ router.put("/edit-user/:id", verifyToken, async (req, res) => {
 
 // API CHANGE PASSWORD
 router.put("/change-password/:id", verifyToken, async (req, res) => {
+  const userId = req.params.id;
   try {
-    const userId = req.params.id;
     const { password } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -99,19 +101,31 @@ router.put("/change-password/:id", verifyToken, async (req, res) => {
 });
 
 // API DELETE USER
-router.delete("/delete-user/:userId", verifyToken, checkAdmin, async (req, res) => {
+router.put("/delete-user/:id", verifyToken, checkAdmin, async (req, res) => {
+  
+  const userId = req.params.id;
   try {
-    const userId = req.params.userId;
-
-    // Kiểm tra xem userId có hợp lệ không
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ success: false, message: "Invalid User ID" });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user",
+      });
     }
-    const deletedUser = await User.findByIdAndDelete(userId);
-    if (!deletedUser) {
-      return res.status(404).json({ success: false, message: "User not found" });
+    if (user.status === 'banned') {
+      return res.status(400).json({
+        success: false,
+        message: "User đã bị Ban trước đó",
+      });
     }
-    res.json({ success: true, message: "User deleted successfully" });
+    user.status = 'banned';
+    const updatedUser = await user.save();
+    res.json({
+      success: true,
+      message: "User đã bị cấm !",
+      category: updatedUser,
+    });
+    
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Internal server error" });

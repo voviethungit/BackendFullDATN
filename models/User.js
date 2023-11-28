@@ -9,8 +9,7 @@ const UserSchema = new Schema({
     required: true
   },
   birthDay:{
-    type: String,
-    default: "01/01/1991"
+    type: String
   },
   sex:{
     type: String,
@@ -69,6 +68,10 @@ const UserSchema = new Schema({
   amount: {
     type: Number,
     default: "0"
+  },
+  linkFB: {
+    type: String,
+    default: "Chưa Liên Kết"
   }
 });
 UserSchema.methods.depositAmount = function(amountToDeposit) {
