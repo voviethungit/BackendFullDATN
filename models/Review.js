@@ -11,9 +11,6 @@ user: {
     ref: "cars",
   },
   content: {
-    type: String
-  },
-  content: {
     type: String,
     required: true,
   },

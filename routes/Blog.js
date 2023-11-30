@@ -66,6 +66,47 @@ router.get("/get-blog/:id", async (req, res) => {
     }
   });
 
+  // API UPDATE BLOG
+router.put("/update-blog/:id", verifyToken, checkAdmin, async (req, res) => {
+  const blogId = req.params.id;
+  const { title, content, imageBlog } = req.body;
+
+  try {
+    const blog = await Blog.findById(blogId);
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy blog",
+      });
+    }
+
+    // Cập nhật thông tin blog nếu các trường được gửi trong request body
+    if (title) {
+      blog.title = title;
+    }
+    if (content) {
+      blog.content = content;
+    }
+    if (imageBlog) {
+      blog.imageBlog = imageBlog;
+    }
+
+    const updatedBlog = await blog.save();
+    res.json({
+      success: true,
+      message: "Thông tin blog đã được cập nhật",
+      blog: updatedBlog,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
+  }
+});
+
+module.exports = router;
+
+
 // API DELETE BLOG
 router.put("/delete-blog/:id", verifyToken, checkAdmin, async (req, res) => {
   const blogId = req.params.id;

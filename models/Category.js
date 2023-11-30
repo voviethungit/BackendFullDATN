@@ -7,6 +7,9 @@ const CategorysSchema = new Schema({
     required: true,
     unique: true,
   },
+  imageCategory: {
+    type: String,
+  },
   status: {
     type: String,
     enum: ['active', 'deleted'],
@@ -15,7 +18,7 @@ const CategorysSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-  },
+  }
 });
 
 module.exports = mongoose.model("Category", CategorysSchema);

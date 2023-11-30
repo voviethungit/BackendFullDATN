@@ -5,7 +5,7 @@ const UserSchema = new Schema({
   fullName: {
     type: String,
     minlength: 6,
-    maxLength: 20,
+    maxLength: 30,
     required: true
   },
   birthDay:{

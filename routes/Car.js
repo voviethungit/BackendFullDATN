@@ -39,25 +39,17 @@ router.post(
       usage,
       flash,
       star,
+      categoryID,
       tax2,
-      model,
       chair
     } = req.body;
-    if (!title || !description || !price || !location || !model)
+    if (!title || !description || !price || !location || !categoryID)
       return res.status(400).json({
         success: false,
         message: "Vui lòng nhập đầy đủ các thông tin !",
       });
 
     try {
-      const category = await Category.findOne({ model });
-
-      if (!category) {
-        return res.status(404).json({
-          success: false,
-          message: "Không tìm thấy category",
-        });
-      }
 
       const newCar = new Car({
         title,
@@ -74,8 +66,7 @@ router.post(
         image2,
         image3,
         chair,
-        categoryID: category._id,
-        categoryModel: category.model,
+        categoryID,
       });
 
       await newCar.save();
@@ -91,7 +82,7 @@ router.post(
 // API get CAR
 router.get("/get-car", async (req, res) => {
   try {
-    const cars = await Car.find({});
+    const cars = await Car.find({ status: { $ne: 'deleted' } });
     res.json({ success: true, cars });
   } catch (error) {
     console.log(error);

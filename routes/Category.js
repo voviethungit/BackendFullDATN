@@ -9,7 +9,7 @@ const checkAdmin = require("../middleware/checkAdmin");
 
 // API ADD CATEGORY
 router.post("/add-category",  verifyToken, checkAdmin, async (req, res) => {
-    const { model } = req.body;
+    const { model, imageCategory } = req.body;
     if (!model)
       return res
         .status(400)
@@ -17,7 +17,8 @@ router.post("/add-category",  verifyToken, checkAdmin, async (req, res) => {
   
     try {
       const newCategory = new Category({
-        model
+        model,
+        imageCategory
       });
   
       await newCategory.save();
@@ -30,9 +31,9 @@ router.post("/add-category",  verifyToken, checkAdmin, async (req, res) => {
   });
 
 // API GET ALL CATEGORY
-router.get("/all-category", verifyToken, async (req, res) => {
+router.get("/all-category", async (req, res) => {
   try {
-    const categories = await Category.find({});
+    const categories = await Category.find({status: { $ne: 'deleted' }});
     res.json({ success: true, message: "THANH CONG ! SOURCE CODE BY 5ANHEMSIEUNHAN", categories });
   } catch (error) {
     console.log(error);
@@ -44,7 +45,7 @@ router.get("/all-category", verifyToken, async (req, res) => {
 // API EDIT CATEGORY
 router.put("/edit-category/:id", verifyToken, checkAdmin, async (req, res) => {
   const categoryId = req.params.id; 
-  const { model } = req.body; 
+  const { model, imageCategory } = req.body; 
 
   try {
     const category = await Category.findById(categoryId);
@@ -60,7 +61,9 @@ router.put("/edit-category/:id", verifyToken, checkAdmin, async (req, res) => {
     if (model) {
       category.model = model;
     }
-
+    if (imageCategory) {
+      category.imageCategory = imageCategory;
+    }
     
     const updatedCategory = await category.save();
 
@@ -77,7 +80,7 @@ router.put("/edit-category/:id", verifyToken, checkAdmin, async (req, res) => {
 
 
 // API DELETE CATEGORY
-router.post("/delete-category/:id", verifyToken, checkAdmin, async (req, res) => {
+router.put("/delete-category/:id", verifyToken, checkAdmin, async (req, res) => {
   const categoryId = req.params.id;
   try {
     const category = await Category.findById(categoryId);

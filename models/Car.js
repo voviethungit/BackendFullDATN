@@ -56,9 +56,10 @@ const CarsSchema = new Schema({
    },
    star: {
     type: Number,
-   },
+  },
    usage: {
     type: String,
+    default: "0 Lượt Thuê"
    },
    tax: {
     type: String,
