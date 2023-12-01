@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-
+const Review = require('./Review');
 const CarsSchema = new Schema({
   categoryID: {
     type: mongoose.Schema.Types.ObjectId,
@@ -74,6 +74,10 @@ const CarsSchema = new Schema({
     enum: ['active', 'deleted'],
     default: "active"
   },
+  reviews: [{
+    type: Schema.Types.ObjectId,
+    ref: 'reviews'
+  }]
 });
 
 module.exports = mongoose.model("Car", CarsSchema);

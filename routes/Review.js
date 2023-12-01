@@ -1,34 +1,77 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+const Review = require('../models/Review');
 const verifyToken = require("../middleware/auth");
-require("../models/Review");
-const Review = mongoose.model("Review");
+const checkAdmin = require("../middleware/checkAdmin");
+router.post('/reviews',verifyToken, async (req, res) => {
+  try {
+    const { userId, carId, rating, reviewText } = req.body; 
 
-// API COMMENT 
-router.post("/review-car", verifyToken, async (req, res) => {
-    const { content } = req.body;
-    if (!content)
-      return res
-        .status(400)
-        .json({ success: false, message: "Vui lòng nhập nội dung !" });
-  
-    try {
-      const newReview = new Review({
-        content,
-        userReview: req.userId,
-        Car: req.carId
-      });
-  
-      await newReview.save();
-  
-      res.json({ success: true, message: "THANH CONG!", review: newReview });
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ success: false, message: "Lỗi từ phía server !" });
+    const newReview = new Review({
+      user: userId,
+      car: carId,
+      rating: rating,
+      reviewText: reviewText
+    });
+
+
+    const savedReview = await newReview.save();
+
+    res.status(201).json(savedReview);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.find(); 
+    res.status(200).json(reviews); 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+router.get('/reviews/:id', async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id); 
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
     }
-  });
-  
+    res.status(200).json(review);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+router.put('/reviews/:id',verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const { rating, reviewText } = req.body;
 
-  module.exports = router;
+    const updatedReview = await Review.findByIdAndUpdate(
+      req.params.id,
+      { rating: rating, reviewText: reviewText },
+      { new: true }
+    );
+
+    if (!updatedReview) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+    res.status(200).json(updatedReview); // Return the updated review
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+router.delete('/reviews/:id', verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const deletedReview = await Review.findByIdAndDelete(req.params.id);
+    if (!deletedReview) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+    res.status(200).json({ message: 'Review deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;

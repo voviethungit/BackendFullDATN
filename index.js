@@ -13,6 +13,12 @@ const categoryRouter = require("./routes/Category");
 const paymentRouter = require("./routes/Payment");
 const billRouter = require("./routes/Bill");
 const verifyUserRouter = require("./routes/VerifyUser");
+const { v4: uuidv4 } = require("uuid");
+const uuid = uuidv4();
+metadata: {
+  firebaseStorageDownloadTokens: uuid;
+}
+const imageRouter = require("./routes/Image");
 // Khai báo database
 const connectDB = async () => {
   try {
@@ -43,6 +49,10 @@ app.use("/", userRouter);
 // API COMMENT
 app.use("/", reviewRouter);
 
+// // API IMAGE
+// app.use("/", imageRouter);
+
+
 
 // API BLOG
 app.use("/", blogRouter);
@@ -64,6 +74,7 @@ app.listen(process.env.PORT, () => {
   console.log(
     `Server dang chay tai PORT : http://localhost:${process.env.PORT}/`
   );
+  console.log(uuid);
 });
 // error handler
 app.use(function(err, req, res, next) {

@@ -41,6 +41,7 @@ router.post(
       star,
       categoryID,
       tax2,
+      fuel,
       chair
     } = req.body;
     if (!title || !description || !price || !location || !categoryID)
@@ -65,6 +66,7 @@ router.post(
         image1,
         image2,
         image3,
+        fuel,
         chair,
         categoryID,
       });
@@ -127,6 +129,7 @@ router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
     flash,
     star,
     tax2,
+    fuel,
     chair,
     model,
   } = req.body;
@@ -156,7 +159,7 @@ router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
     car.tax2 = tax2 || car.tax2;
     car.model = model || car.model;
     car.chair = chair || car.chair;
-
+    car.fuel = fuel || car.fuel;
   
     const updatedCar = await car.save();
 

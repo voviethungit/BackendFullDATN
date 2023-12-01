@@ -7,7 +7,14 @@ const argon2 = require("argon2");
 require("../models/User");
 const User = mongoose.model("User");
 const checkAdmin = require("../middleware/checkAdmin");
-
+const multer = require("multer");
+const admin = require("firebase-admin");
+const serviceAccount = require("../firebase/SDK_HungDev.json");
+const { v4: uuidv4 } = require("uuid");
+const uuid = uuidv4();
+metadata: {
+  firebaseStorageDownloadTokens: uuid;
+}
 //API GET ALL USER
 router.get("/getAllUser", verifyToken, checkAdmin, async (req, res) => {
   try {
@@ -38,36 +45,70 @@ router.get("/getProfile", verifyToken, async (req, res) => {
   }
 });
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 // API EDIT USER
-router.put("/edit-user/:id", verifyToken, async (req, res) => {
+router.put("/edit-user/:id", upload.single("image"), verifyToken,  async (req, res) => {
   try {
-    const userId = req.params.id;
-    const { fullName, email, location, birthDay, linkFB, avatar } = req.body;
+    let imageUrl = "";
+    if (req.file) {
+      const bucket = admin.storage().bucket();
+      const imageFileName = `${Date.now()}_${req.file.originalname}`;
+      const fileUpload = bucket.file(imageFileName);
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ success: false, message: "Khong tim thay user ID" });
+      const blobStream = fileUpload.createWriteStream({
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+      });
+
+      blobStream.on("error", (error) => {
+        console.error(error);
+        return res.status(500).json({
+          success: false,
+          message: "Lỗi khi tải ảnh lên Firebase Storage!",
+        });
+      });
+
+      blobStream.on("finish", async () => {
+        try {
+          imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
+
+          const userId = req.params.id;
+          const { fullName, email, location, birthDay, linkFB, avatar } = req.body;
+
+          if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ success: false, message: "Không tìm thấy user ID" });
+          }
+
+          const updatedUserData = {
+            fullName,
+            email,
+            location,
+            birthDay,
+            linkFB,
+            avatar: imageUrl,
+          };
+
+          const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updatedUserData,
+            { new: true } 
+          );
+
+          if (!updatedUser) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy user" });
+          }
+
+          res.json({ success: true, message: "Cập nhật thông tin người dùng thành công", user: updatedUser });
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ success: false, message: "Lỗi từ phía server khi cập nhật thông tin người dùng!" });
+        }
+      });
+
+      blobStream.end(req.file.buffer);
     }
-
-    const updatedUserData = {
-      fullName,
-      email,
-      location,
-      birthDay,
-      linkFB,
-      avatar
-    };
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updatedUserData,
-      { new: true } 
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ success: false, message: "Khong tim thay user" });
-    }
-
-    res.json({ success: true, message: "Cap Nhat Thanh Cong User", user: updatedUser });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Lỗi Server ! Click vào link để được hỗ trợ: https://www.facebook.com/VoVietHung.IT" });
