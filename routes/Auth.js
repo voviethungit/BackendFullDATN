@@ -14,6 +14,7 @@ const uuid = uuidv4();
 metadata: {
   firebaseStorageDownloadTokens: uuid;
 }
+
 // verify-middleware
 router.get("/", verifyToken, async (req, res) => {
   try {
@@ -27,11 +28,6 @@ router.get("/", verifyToken, async (req, res) => {
     console.log(error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
-});
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://xetotdanang-default-rtdb.firebaseio.com",
-  storageBucket: "xetotdanang.appspot.com/",
 });
 
 

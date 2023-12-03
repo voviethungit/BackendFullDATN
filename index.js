@@ -4,6 +4,10 @@ const app = express();
 const cors = require("cors");
 const crypto = require('crypto');
 const mongoose = require("mongoose");
+const logger = require('morgan');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const authRouter = require("./routes/Auth");
 const carRouter = require("./routes/Car");
 const userRouter = require("./routes/User");
@@ -13,12 +17,16 @@ const categoryRouter = require("./routes/Category");
 const paymentRouter = require("./routes/Payment");
 const billRouter = require("./routes/Bill");
 const verifyUserRouter = require("./routes/VerifyUser");
+const countRouter = require("./routes/CountDev");
+const vnpayRouter = require("./routes/VNPay");
+const admin = require("firebase-admin");
 const { v4: uuidv4 } = require("uuid");
 const uuid = uuidv4();
 metadata: {
   firebaseStorageDownloadTokens: uuid;
 }
-const imageRouter = require("./routes/Image");
+const initializeFirebase = require('./firebase/firebase_confighungdev');
+initializeFirebase();
 // Khai báo database
 const connectDB = async () => {
   try {
@@ -32,9 +40,18 @@ const connectDB = async () => {
   }
 };
 connectDB();
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+
 app.use(express.json());
+app.use(logger('dev'));
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 // API AUTH
@@ -49,9 +66,11 @@ app.use("/", userRouter);
 // API COMMENT
 app.use("/", reviewRouter);
 
-// // API IMAGE
-// app.use("/", imageRouter);
+// API COUNT
+app.use("/", countRouter);
 
+// API VNPAY
+app.use("/", vnpayRouter);
 
 
 // API BLOG
@@ -74,11 +93,10 @@ app.listen(process.env.PORT, () => {
   console.log(
     `Server dang chay tai PORT : http://localhost:${process.env.PORT}/`
   );
-  console.log(uuid);
+  console.log("Hung Developer x 5AESieuNhan");
 });
 // error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 

@@ -8,33 +8,32 @@ const Category = mongoose.model("Category");
 const multer = require("multer");
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
-// API UPLOAD CAR
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "images/");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
+const admin = require("firebase-admin");
+const { v4: uuidv4 } = require("uuid");
+const uuid = uuidv4();
+metadata: {
+  firebaseStorageDownloadTokens: uuid;
+}
 
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
 router.post(
   "/upload-car",
-  upload.single("image"),
   verifyToken,
   checkAdmin,
+  upload.fields([
+    { name: "imagePath", maxCount: 1 },
+    { name: "image1", maxCount: 1 },
+    { name: "image2", maxCount: 1 },
+    { name: "image3", maxCount: 1 },
+  ]),
   async (req, res) => {
     const {
       title,
       description,
       price,
       location,
-      imagePath,
-      image1,
-      image2,
-      image3,
       tax,
       usage,
       flash,
@@ -42,33 +41,67 @@ router.post(
       categoryID,
       tax2,
       fuel,
-      chair
+      chair,
+      model,
     } = req.body;
+
     if (!title || !description || !price || !location || !categoryID)
       return res.status(400).json({
         success: false,
-        message: "Vui lòng nhập đầy đủ các thông tin !",
+        message: "Vui lòng nhập đầy đủ các thông tin!",
       });
 
     try {
+      const images = req.files;
+
+      const imageUrls = await Promise.all(
+        Object.keys(images).map(async (key) => {
+          const bucket = admin.storage().bucket();
+          const file = images[key][0];
+          const imageFileName = `${Date.now()}_${file.originalname}`;
+          const blob = bucket.file(imageFileName);
+
+          const blobStream = blob.createWriteStream({
+            metadata: {
+              contentType: file.mimetype,
+            },
+          });
+
+          return new Promise((resolve, reject) => {
+            blobStream.on("error", (error) => {
+              console.error(error);
+              reject("Lỗi khi tải ảnh lên Firebase Storage!");
+            });
+
+            blobStream.on("finish", () => {
+              const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${blob.name}?alt=media&token=${uuid}`;
+              resolve(imageUrl);
+            });
+            
+
+            blobStream.end(file.buffer);
+          });
+        })
+      );
 
       const newCar = new Car({
         title,
         description,
         price,
         location,
-        imagePath,
         tax,
         usage,
         flash,
         star,
+        categoryID,
         tax2,
-        image1,
-        image2,
-        image3,
         fuel,
         chair,
-        categoryID,
+        model,
+        imagePath: imageUrls[0],
+        image1: imageUrls[1],
+        image2: imageUrls[2], 
+        image3: imageUrls[3],
       });
 
       await newCar.save();
@@ -76,15 +109,14 @@ router.post(
       res.json({ success: true, message: "THANH CONG!", car: newCar });
     } catch (error) {
       console.log(error);
-      res.status(500).json({ success: false, message: "Lỗi từ phía server !" });
+      res.status(500).json({ success: false, message: "Lỗi từ phía server!" });
     }
   }
 );
-
 // API get CAR
 router.get("/get-car", async (req, res) => {
   try {
-    const cars = await Car.find({ status: { $ne: 'deleted' } });
+    const cars = await Car.find({ status: { $ne: "deleted" } });
     res.json({ success: true, cars });
   } catch (error) {
     console.log(error);
@@ -110,10 +142,9 @@ router.get("/get-car/:id", async (req, res) => {
   }
 });
 
-
 // API EDIT CAR
 router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
-  const carId = req.params.id; 
+  const carId = req.params.id;
 
   const {
     title,
@@ -160,7 +191,7 @@ router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
     car.model = model || car.model;
     car.chair = chair || car.chair;
     car.fuel = fuel || car.fuel;
-  
+
     const updatedCar = await car.save();
 
     res.json({
@@ -188,14 +219,14 @@ router.put("/delete-car/:id", verifyToken, checkAdmin, async (req, res) => {
       });
     }
 
-    if (car.status === 'deleted') {
+    if (car.status === "deleted") {
       return res.status(400).json({
         success: false,
         message: "Xe đã được đánh dấu là đã xóa trước đó",
       });
     }
 
-    car.status = 'deleted';
+    car.status = "deleted";
 
     const updatedCar = await car.save();
 
@@ -209,6 +240,5 @@ router.put("/delete-car/:id", verifyToken, checkAdmin, async (req, res) => {
     res.status(500).json({ success: false, message: "Lỗi từ phía server" });
   }
 });
-
 
 module.exports = router;
