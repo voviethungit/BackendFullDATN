@@ -46,7 +46,7 @@ router.post('/create_payment_url', function (req, res, next) {
     let tmnCode = config.get('vnp_TmnCode');
     let secretKey = config.get('vnp_HashSecret');
     let vnpUrl = config.get('vnp_Url');
-    let returnUrl = config.get('vnp_ReturnUrl');
+    let returnUrl = (config.get('vnp_ReturnUrl'));
     let orderId = moment(date).format('DDHHmmss');
     let amount = req.body.amount;
     let bankCode = req.body.bankCode;

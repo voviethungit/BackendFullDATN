@@ -162,7 +162,9 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Sai tài khoản hoặc mật khẩu" });
 
-    // tìm kiếm user
+    if (user.status === 'banned') {
+      return res.status(403).json({ success: false, message: "Tài khoản của bạn đã bị cấm truy cập!" });
+    }
     const passwordValid = await argon2.verify(user.password, password);
     if (!passwordValid)
       return res

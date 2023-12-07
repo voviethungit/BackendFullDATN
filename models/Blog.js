@@ -19,6 +19,10 @@ const BlogSchema = new Schema({
     enum: ['active', 'deleted'],
     default: "active"
   },
+  createAt: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
 module.exports = mongoose.model("Blog", BlogSchema);

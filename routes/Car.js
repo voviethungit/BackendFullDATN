@@ -126,6 +126,7 @@ router.get("/get-car", async (req, res) => {
 
 // API GET ID CAR
 router.get("/get-car/:id", async (req, res) => {
+  const carId = req.params.id;
   try {
     const car = await Car.findById(req.params.id);
     if (!car) {
@@ -133,7 +134,12 @@ router.get("/get-car/:id", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Không tìm thấy xe" });
     }
-    res.json({ success: true, car });
+    const similarCars = await Car.find({
+      _id: { $ne: carId }, 
+      categoryID: car.categoryID, 
+      status: { $ne: "deleted" }
+    });
+    res.json({ success: true, car, similarCars });
   } catch (error) {
     console.log(error);
     res

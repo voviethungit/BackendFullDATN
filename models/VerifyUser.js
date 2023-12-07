@@ -22,6 +22,10 @@ const VerifyUsersSchema = new Schema({
     type: String,
     required: true,
   },
+  sendAt:{
+    type: Date,
+    default: Date.now,
+  }
 });
 
 module.exports = mongoose.model("VerifyUser", VerifyUsersSchema);
