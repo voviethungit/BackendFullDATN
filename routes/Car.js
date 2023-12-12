@@ -19,16 +19,11 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 router.post(
-  "/upload-car",
-  verifyToken,
-  checkAdmin,
-  upload.fields([
-    { name: "imagePath", maxCount: 1 },
+  "/upload-car", verifyToken, checkAdmin, upload.fields([{ name: "imagePath", maxCount: 1 },
     { name: "image1", maxCount: 1 },
     { name: "image2", maxCount: 1 },
     { name: "image3", maxCount: 1 },
-  ]),
-  async (req, res) => {
+  ]),async (req, res) => {
     const {
       title,
       description,
@@ -54,6 +49,14 @@ router.post(
     try {
       const images = req.files;
 
+      if (!images || typeof images !== "object") {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Không có hình ảnh được tải lên hoặc dữ liệu hình ảnh không hợp lệ",
+        });
+      }
+
       const imageUrls = await Promise.all(
         Object.keys(images).map(async (key) => {
           const bucket = admin.storage().bucket();
@@ -77,7 +80,6 @@ router.post(
               const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${blob.name}?alt=media&token=${uuid}`;
               resolve(imageUrl);
             });
-            
 
             blobStream.end(file.buffer);
           });
@@ -100,7 +102,7 @@ router.post(
         model,
         imagePath: imageUrls[0],
         image1: imageUrls[1],
-        image2: imageUrls[2], 
+        image2: imageUrls[2],
         image3: imageUrls[3],
       });
 
@@ -116,7 +118,7 @@ router.post(
 // API get CAR
 router.get("/get-car", async (req, res) => {
   try {
-    const cars = await Car.find({ status: { $ne: "deleted" } });
+    const cars = await Car.find({ status: { $ne: "deleted" }, isAvailable: true });
     res.json({ success: true, cars });
   } catch (error) {
     console.log(error);
@@ -128,16 +130,17 @@ router.get("/get-car", async (req, res) => {
 router.get("/get-car/:id", async (req, res) => {
   const carId = req.params.id;
   try {
-    const car = await Car.findById(req.params.id);
+    const car = await Car.findOne({ _id: carId, status: { $ne: "deleted" }, isAvailable: true });
     if (!car) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy xe" });
     }
     const similarCars = await Car.find({
-      _id: { $ne: carId }, 
-      categoryID: car.categoryID, 
-      status: { $ne: "deleted" }
+      _id: { $ne: carId },
+      categoryID: car.categoryID,
+      status: { $ne: "deleted" },
+      isAvailable: true,
     });
     res.json({ success: true, car, similarCars });
   } catch (error) {
@@ -211,6 +214,52 @@ router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+// API GET DELETED CARS
+router.get("/get-deleted-cars", verifyToken, checkAdmin, async (req, res) => {
+  try {
+    const deletedCars = await Car.find({ status: "deleted" });
+    res.json({ success: true, deletedCars });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server!" });
+  }
+});
+
+// API RESTORE CAR
+router.put("/restore-car/:id", verifyToken, checkAdmin, async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const car = await Car.findById(carId);
+
+    if (!car) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe",
+      });
+    }
+
+    if (car.status !== "deleted") {
+      return res.status(400).json({
+        success: false,
+        message: "Xe chưa được đánh dấu là đã xóa",
+      });
+    }
+
+    car.status = "active"; 
+
+    const restoredCar = await car.save();
+
+    res.json({
+      success: true,
+      message: "Xe đã được khôi phục",
+      car: restoredCar,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
+  }
+});
 // API DELETE CAR
 router.put("/delete-car/:id", verifyToken, checkAdmin, async (req, res) => {
   const carId = req.params.id;

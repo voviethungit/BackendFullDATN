@@ -74,6 +74,10 @@ const CarsSchema = new Schema({
     enum: ['active', 'deleted'],
     default: "active"
   },
+  isAvailable: {
+    type: Boolean,
+    default: true
+},
   reviews: [{
     type: Schema.Types.ObjectId,
     ref: 'reviews'

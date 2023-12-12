@@ -4,40 +4,70 @@ const mongoose = require("mongoose");
 require("../models/Blog");
 const Blog = mongoose.model("Blog");
 const multer = require("multer");
+const admin = require("firebase-admin");
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
+const { v4: uuidv4 } = require("uuid");
+const uuid = uuidv4();
+metadata: {
+  firebaseStorageDownloadTokens: uuid;
+}
 // API UPLOAD BlOG
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, "images/");
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now();
-      cb(null, uniqueSuffix + file.originalname);
-    },
-  });
   
-const upload = multer({ storage: storage });
-router.post("/upload-blog", verifyToken, checkAdmin, async (req, res) => {
-    const { title, content, imageBlog } = req.body;
-    if (!title || !content )
-      return res
-        .status(400)
-        .json({ success: false, message: "Vui lòng nhập đầy đủ các thông tin !" });
+  const storage = multer.memoryStorage();
+  const upload = multer({ storage: storage });
+router.post("/upload-blog", upload.single("imageBlog"), verifyToken, checkAdmin, async (req, res) => {
+    const { title, content } = req.body;
+    const imageBlog = req.file;
+  
+    if (!title || !content || !imageBlog) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ thông tin và tải lên ảnh cho blog!",
+      });
+    }
   
     try {
-      const newBlog = new Blog({
-        title,
-        content,
-        imageBlog,
+      const imageFileName = `${Date.now()}_${imageBlog.originalname}`;
+      const fileUpload = bucket.file(imageFileName);
+  
+      const blobStream = fileUpload.createWriteStream({
+        metadata: {
+          contentType: imageBlog.mimetype,
+        },
       });
   
-      await newBlog.save();
+      blobStream.on("error", (error) => {
+        console.error(error);
+        return res.status(500).json({
+          success: false,
+          message: "Lỗi khi tải ảnh lên Firebase Storage!",
+        });
+      });
   
-      res.json({ success: true, message: "THANH CONG!", blog: newBlog });
+      blobStream.on("finish", async () => {
+        try {
+          const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${fileUpload.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
+  
+          const newBlog = new Blog({
+            title,
+            content,
+            imageBlog: imageUrl,
+          });
+  
+          await newBlog.save();
+  
+          res.json({ success: true, message: "Tạo blog thành công!", blog: newBlog });
+        } catch (error) {
+          console.log(error);
+          res.status(500).json({ success: false, message: "Lỗi từ phía server khi tạo blog!" });
+        }
+      });
+  
+      blobStream.end(imageBlog.buffer);
     } catch (error) {
       console.log(error);
-      res.status(500).json({ success: false, message: "Lỗi từ phía server !" });
+      res.status(500).json({ success: false, message: "Lỗi Server !" });
     }
   });
   

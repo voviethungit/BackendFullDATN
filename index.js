@@ -19,6 +19,7 @@ const billRouter = require("./routes/Bill");
 const verifyUserRouter = require("./routes/VerifyUser");
 const countRouter = require("./routes/CountDev");
 const vnpayRouter = require("./routes/VNPay");
+const rentRouter = require("./routes/RentCar");
 const customerRouter = require("./routes/Customer");
 const admin = require("firebase-admin");
 const { v4: uuidv4 } = require("uuid");
@@ -55,6 +56,7 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+
 // API AUTH
 app.use("/", authRouter);
 
@@ -73,6 +75,8 @@ app.use("/", countRouter);
 // API VNPAY
 app.use("/", vnpayRouter);
 
+// API RENT
+app.use("/", rentRouter);
 
 // API CUSTOMER
 app.use("/", customerRouter);

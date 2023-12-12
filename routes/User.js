@@ -173,4 +173,35 @@ router.put("/delete-user/:id", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+// API UNBAN USER
+router.put("/unban-user/:id", verifyToken, checkAdmin, async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user",
+      });
+    }
+    if (user.status !== 'banned') {
+      return res.status(400).json({
+        success: false,
+        message: "User chưa bị cấm trước đó",
+      });
+    }
+    user.status = 'active';
+    const updatedUser = await user.save();
+    res.json({
+      success: true,
+      message: "User đã được mở cấm!",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ" });
+  }
+});
+
+
 module.exports = router;
