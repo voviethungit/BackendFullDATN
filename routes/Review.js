@@ -1,21 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require("mongoose");
 const Review = require('../models/Review');
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
-const User = require("../models/User");
+require("../models/User");
+const User = mongoose.model("User");
+require("../models/Car");
+const Car = mongoose.model("Car");
 router.post('/reviews',verifyToken, async (req, res) => {
   try {
 
     
-    const { userId, carId, rating, reviewText, fullName } = req.body; 
+    const { userId, carId, rating, reviewText } = req.body; 
     const user = await User.findById(userId);
-
-    if (!user) {
+    const car = await Car.findById(carId);
+    if (!user || !car) {
       return res.status(404).json({ message: 'Người dùng không tồn tại' });
     }
 
     const newReview = new Review({
+      fullName: user.fullName,
+      avatar: user.avatar,
       user: userId,
       car: carId,
       rating: rating,
@@ -41,17 +47,19 @@ router.get('/reviews', async (req, res) => {
 });
 
 
-router.get('/reviews/:id', async (req, res) => {
+router.get('/reviews/:carId', async (req, res) => {
+  const carId = req.params.carId;
   try {
-    const review = await Review.findById(req.params.id); 
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
+    const reviews = await Review.find({ car: carId });
+    if (reviews.length === 0) {
+      return res.status(404).json({ message: 'No reviews found for this car' });
     }
-    res.status(200).json(review);
+    res.status(200).json(reviews);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 router.put('/reviews/:id',verifyToken, checkAdmin, async (req, res) => {
   try {
     const { rating, reviewText } = req.body;
