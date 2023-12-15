@@ -9,7 +9,7 @@ const RentalHistory = require("../models/RentalHistory");
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
 
-router.post("/rent-car/:userId/:carId", async (req, res) => {
+router.post("/rent-car/:userId/:carId",verifyToken, async (req, res) => {
   const userId = req.params.userId;
   const carId = req.params.carId;
 

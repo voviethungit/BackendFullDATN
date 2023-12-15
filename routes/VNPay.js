@@ -6,7 +6,8 @@ let router = express.Router();
 let $ = require('jquery');
 const request = require('request');
 const moment = require('moment');
-
+const mongoose = require("mongoose");
+const User = require("../models/User");
 
 router.get('/', function(req, res, next){
     res.render('orderlist', { title: 'Danh sách đơn hàng' })
@@ -86,7 +87,7 @@ router.post('/create_payment_url', function (req, res, next) {
     res.redirect(vnpUrl)
 });
 
-router.get('/vnpay_return', function (req, res, next) {
+router.get('/vnpay_return',async function (req, res, next) {
     let vnp_Params = req.query;
 
     let secureHash = vnp_Params['vnp_SecureHash'];
@@ -107,9 +108,15 @@ router.get('/vnpay_return', function (req, res, next) {
     let signed = hmac.update(new Buffer(signData, 'utf-8')).digest("hex");     
 
     if(secureHash === signed){
-        //Kiem tra xem du lieu trong db co hop le hay khong va thong bao ket qua
-
-        res.render('success', {code: vnp_Params['vnp_ResponseCode']})
+        let amountPaid = vnp_Params["vnp_Amount"] /100;
+        let userId = req.body.userId;
+        const user = await User.findById(userId);
+        if (user) {
+            user.accountBalance += amountPaid;
+            await user.save();
+            res.redirect('http://localhost:3000/success'); 
+            res.render('error', { message: 'Không tìm thấy người dùng' });
+          }
     } else{
         res.render('success', {code: '97'})
     }
