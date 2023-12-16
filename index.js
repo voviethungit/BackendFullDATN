@@ -21,6 +21,7 @@ const countRouter = require("./routes/CountDev");
 const vnpayRouter = require("./routes/VNPay");
 const rentRouter = require("./routes/RentCar");
 const customerRouter = require("./routes/Customer");
+const favotireRouter = require("./routes/Favorite");
 const admin = require("firebase-admin");
 const { v4: uuidv4 } = require("uuid");
 const uuid = uuidv4();
@@ -92,6 +93,10 @@ app.use("/", paymentRouter);
 
 // API HOA DON
 app.use("/", billRouter);
+
+
+// API Xe Yeu Thich
+app.use("/", favotireRouter);
 
 // API GPLX
 app.use("/", verifyUserRouter);
