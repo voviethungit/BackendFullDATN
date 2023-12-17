@@ -9,12 +9,20 @@ const User = mongoose.model("User");
 const checkAdmin = require("../middleware/checkAdmin");
 const multer = require("multer");
 const admin = require("firebase-admin");
-const serviceAccount = require("../firebase/SDK_HungDev.json");
+const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const uuid = uuidv4();
 metadata: {
   firebaseStorageDownloadTokens: uuid;
 }
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "voviethung.tk@gmail.com", 
+    pass: "capa wnzi xpnh ejwz",
+  },
+});
+
 //API GET ALL USER
 router.get("/getAllUser", verifyToken, checkAdmin, async (req, res) => {
   try {
@@ -47,9 +55,32 @@ router.get("/getProfile", verifyToken, async (req, res) => {
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-// API EDIT USER
-router.put("/edit-user/:id", upload.single("image"), verifyToken,  async (req, res) => {
+router.put("/edit-user/:id", upload.single("image"), verifyToken, async (req, res) => {
   try {
+    const userId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Không tìm thấy user ID" });
+    }
+
+    const userDataToUpdate = {};
+
+    if (req.body.fullName) {
+      userDataToUpdate.fullName = req.body.fullName;
+    }
+    if (req.body.email) {
+      userDataToUpdate.email = req.body.email;
+    }
+    if (req.body.location) {
+      userDataToUpdate.location = req.body.location;
+    }
+    if (req.body.birthDay) {
+      userDataToUpdate.birthDay = req.body.birthDay;
+    }
+    if (req.body.linkFB) {
+      userDataToUpdate.linkFB = req.body.linkFB;
+    }
+
     let imageUrl = "";
     if (req.file) {
       const bucket = admin.storage().bucket();
@@ -73,27 +104,12 @@ router.put("/edit-user/:id", upload.single("image"), verifyToken,  async (req, r
       blobStream.on("finish", async () => {
         try {
           imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
-
-          const userId = req.params.id;
-          const { fullName, email, location, birthDay, linkFB, avatar } = req.body;
-
-          if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ success: false, message: "Không tìm thấy user ID" });
-          }
-
-          const updatedUserData = {
-            fullName,
-            email,
-            location,
-            birthDay,
-            linkFB,
-            avatar: imageUrl,
-          };
+          userDataToUpdate.avatar = imageUrl; 
 
           const updatedUser = await User.findByIdAndUpdate(
             userId,
-            updatedUserData,
-            { new: true } 
+            userDataToUpdate,
+            { new: true }
           );
 
           if (!updatedUser) {
@@ -108,9 +124,21 @@ router.put("/edit-user/:id", upload.single("image"), verifyToken,  async (req, r
       });
 
       blobStream.end(req.file.buffer);
+    } else {
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        userDataToUpdate,
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy user" });
+      }
+
+      res.json({ success: true, message: "Cập nhật thông tin người dùng thành công", user: updatedUser });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ success: false, message: "Lỗi Server ! Click vào link để được hỗ trợ: https://www.facebook.com/VoVietHung.IT" });
   }
 });
@@ -203,5 +231,73 @@ router.put("/unban-user/:id", verifyToken, checkAdmin, async (req, res) => {
   }
 });
 
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
 
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy người dùng với email này" });
+    }
+
+    // Tạo token reset password
+    const resetToken = jwt.sign({ _id: user._id }, "hdasdksakdsakdjasjdaskaksd222231312", {
+      expiresIn: "1h",
+    });
+
+    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+
+    const mailOptions = {
+      from: "voviethung.tk@gmail.com",
+      to: email,
+      subject: "Xe Tốt - Quên Mật Khẩu",
+      html: `<p>Chào bạn, Xe Tốt Gửi Bạn Các Bước Để Lấy Lại Mật Khẩu !</p>
+             <p>Bước 1 : Vui lòng nhấn vào <a href="${resetLink}">đây</a> để reset mật khẩu.</p>
+             <p>Bước 2 : Khi click vào liên kết trên sẽ hiển thị nhập mật khẩu mới và bấm xác nhận !</p>
+             <p>Lưu ý : Link sẽ hết hạn sau 1 giờ.</p>`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: "Lỗi gửi email" });
+      }
+      console.log("Email sent: " + info.response);
+      res.json({ success: true, message: "Email đã được gửi để reset mật khẩu" });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ" });
+  }
+});
+router.post("/reset-password/:token", async (req, res) => {
+  try {
+    const resetToken = req.params.token;
+    const { newPassword } = req.body;
+
+    jwt.verify(resetToken, "hdasdksakdsakdjasjdaskaksd222231312", async (err, decoded) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: "Token không hợp lệ hoặc đã hết hạn" });
+      }
+
+      const user = await User.findById(decoded._id);
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
+      }
+
+      const hashedPassword = await argon2.hash(newPassword);
+      user.password = hashedPassword;
+      await user.save();
+
+      res.json({ success: true, message: "Mật khẩu đã được cập nhật thành công" });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ" });
+  }
+});
 module.exports = router;

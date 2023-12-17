@@ -152,27 +152,13 @@ router.get("/get-car/:id", async (req, res) => {
 });
 
 // API EDIT CAR
-router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
+router.put("/update-car/:id", verifyToken, checkAdmin, upload.fields([
+  { name: "imagePath", maxCount: 1 },
+  { name: "image1", maxCount: 1 },
+  { name: "image2", maxCount: 1 },
+  { name: "image3", maxCount: 1 },
+]), async (req, res) => {
   const carId = req.params.id;
-
-  const {
-    title,
-    description,
-    price,
-    location,
-    imagePath,
-    image1,
-    image2,
-    image3,
-    tax,
-    usage,
-    flash,
-    star,
-    tax2,
-    fuel,
-    chair,
-    model,
-  } = req.body;
 
   try {
     const car = await Car.findById(carId);
@@ -184,23 +170,63 @@ router.put("/update-car/:id", verifyToken, checkAdmin, async (req, res) => {
       });
     }
 
-    car.title = title || car.title;
-    car.description = description || car.description;
-    car.price = price || car.price;
-    car.location = location || car.location;
-    car.imagePath = imagePath || car.imagePath;
-    car.image1 = image1 || car.image1;
-    car.image2 = image2 || car.image2;
-    car.image3 = image3 || car.image3;
-    car.tax = tax || car.tax;
-    car.usage = usage || car.usage;
-    car.flash = flash || car.flash;
-    car.star = star || car.star;
-    car.tax2 = tax2 || car.tax2;
-    car.model = model || car.model;
-    car.chair = chair || car.chair;
-    car.fuel = fuel || car.fuel;
+    const images = req.files;
 
+    const updateFields = {
+      // Lấy các trường thông tin xe khác từ req.body
+      title: req.body.title || car.title,
+      description: req.body.description || car.description,
+      price: req.body.price || car.price,
+      location: req.body.location || car.location,
+      tax: req.body.tax || car.tax,
+      usage: req.body.usage || car.usage,
+      flash: req.body.flash || car.flash,
+      star: req.body.star || car.star,
+      tax2: req.body.tax2 || car.tax2,
+      fuel: req.body.fuel || car.fuel,
+      chair: req.body.chair || car.chair,
+      model: req.body.model || car.model,
+    };
+
+    // Hàm upload ảnh lên Firebase Storage và cập nhật đường dẫn ảnh trong cơ sở dữ liệu
+    const uploadAndUpdate = async (key) => {
+      if (images[key] && images[key][0]) {
+        const bucket = admin.storage().bucket();
+        const image = images[key][0];
+        const imageFileName = `${Date.now()}_${image.originalname}`;
+        const fileUpload = bucket.file(imageFileName);
+
+        const blobStream = fileUpload.createWriteStream({
+          metadata: {
+            contentType: image.mimetype,
+          },
+        });
+
+        await new Promise((resolve, reject) => {
+          blobStream.on("error", (error) => {
+            console.error(error);
+            reject("Lỗi khi tải ảnh lên Firebase Storage!");
+          });
+
+          blobStream.on("finish", async () => {
+            // Lấy đường dẫn URL của ảnh đã upload lên Firebase Storage
+            const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
+            updateFields[key] = imageUrl;
+
+            resolve();
+          });
+
+          blobStream.end(image.buffer);
+        });
+      }
+    };
+
+    // Gọi hàm upload cho từng ảnh
+    const imageKeys = ["imagePath", "image1", "image2", "image3"];
+    await Promise.all(imageKeys.map(async (key) => uploadAndUpdate(key)));
+
+    // Cập nhật thông tin của xe trong cơ sở dữ liệu
+    Object.assign(car, updateFields);
     const updatedCar = await car.save();
 
     res.json({
