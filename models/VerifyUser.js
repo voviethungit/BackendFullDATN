@@ -15,16 +15,19 @@ const VerifyUsersSchema = new Schema({
     required: true,
   },
   ngaySinh: {
-    type: Date,
+    type: String,
     required: true,
   },
   hinhAnhGiayPhep: {
     type: String,
-    required: true,
   },
   sendAt:{
     type: Date,
     default: Date.now,
+  },
+  status: {
+    type: String,
+    default: "Chờ Xác Nhận"
   }
 });
 

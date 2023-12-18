@@ -185,6 +185,7 @@ router.post("/login", async (req, res) => {
       message: "Đăng Nhập Thành Công!",
       accessToken,
       userId: user._id,
+      isAdmin: user.isAdmin,
     });
   } catch (error) {
     console.log(error);

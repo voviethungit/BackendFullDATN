@@ -230,7 +230,24 @@ router.put("/unban-user/:id", verifyToken, checkAdmin, async (req, res) => {
     res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ" });
   }
 });
+router.post('/update_balance', async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    const user = await User.findById(userId);
 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.accountBalance += parseFloat(amount); 
+
+    await user.save();
+
+    return res.status(200).json({ message: 'Account balance updated successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;

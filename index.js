@@ -18,7 +18,6 @@ const paymentRouter = require("./routes/Payment");
 const billRouter = require("./routes/Bill");
 const verifyUserRouter = require("./routes/VerifyUser");
 const countRouter = require("./routes/CountDev");
-const vnpayRouter = require("./routes/VNPay");
 const rentRouter = require("./routes/RentCar");
 const customerRouter = require("./routes/Customer");
 const favotireRouter = require("./routes/Favorite");
@@ -43,10 +42,7 @@ const connectDB = async () => {
   }
 };
 connectDB();
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'ejs');
 
 app.use(express.json());
 app.use(logger('dev'));
@@ -73,8 +69,6 @@ app.use("/", reviewRouter);
 // API COUNT
 app.use("/", countRouter);
 
-// API VNPAY
-app.use("/", vnpayRouter);
 
 // API RENT
 app.use("/", rentRouter);
@@ -107,13 +101,4 @@ app.listen(process.env.PORT, () => {
     `Server dang chay tai PORT : http://localhost:${process.env.PORT}/`
   );
   console.log("Hung Developer x 5AESieuNhan");
-});
-// error handler
-app.use(function(err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
 });
