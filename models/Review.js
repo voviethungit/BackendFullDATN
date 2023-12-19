@@ -31,6 +31,10 @@ const ReviewSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: String,
+    default: "active"
+  }
 });
 
 module.exports = mongoose.model("Review", ReviewSchema);

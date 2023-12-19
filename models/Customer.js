@@ -13,6 +13,9 @@ const CustomersSchema = new Schema({
   location: {
     type: String
   },
+  title :{
+    type: String,
+  },
   status: {
     type: String,
     enum: ['success', 'false', 'waiting'],

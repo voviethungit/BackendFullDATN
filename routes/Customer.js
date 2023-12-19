@@ -10,14 +10,15 @@ const checkAdmin = require("../middleware/checkAdmin");
 
 router.post("/create-customer", verifyToken, checkAdmin, async (req, res) => {
   try {
-    const { fullName, nameCar, status, amount, Date, isDelete, location } = req.body;
+    const { fullName, nameCar,  status, Date, location } = req.body;
+    const car = await Car.findById(nameCar);
     const newCustomer = new Customer({
       fullName,
       location,
       nameCar,
+      title: car.title,
       status,
-      isDelete,
-      amount,
+      amount: car.price,
       Date,
     });
     await newCustomer.save();
@@ -93,29 +94,44 @@ router.put(
   }
 );
 
-router.put("/edit-customer/:id", verifyToken, checkAdmin, async (req, res) => {
+router.put("/update-customer/:id", verifyToken, checkAdmin, async (req, res) => {
+  const customerId = req.params.id;
   try {
-    const customerId = req.params.id;
-    const { fullName, location, car, status, amount, Date } = req.body;
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      customerId,
-      { fullName, car, status, amount, Date, location },
-      { new: true }
-    );
-    if (!updatedCustomer) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy khách hàng để cập nhật" });
+    const { fullName, nameCar, status, Date, location } = req.body;
+    const car = await Car.findById(nameCar);
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy Khách Hàng",
+      });
     }
-    res.status(200).json({
-      message: "Thông tin khách hàng đã được cập nhật",
-      updatedCustomer,
+
+    if (customer.isDelete === 'deleted') {
+      return res.status(400).json({
+        success: false,
+        message: "Khách Hàng đã bị xóa trước đó",
+      });
+    }
+
+    customer.fullName = fullName || customer.fullName;
+    customer.nameCar = nameCar || customer.nameCar;
+    customer.title = car ? car.title : customer.title;
+    customer.status = status || customer.status;
+    customer.Date = Date || customer.Date;
+    customer.location = location || customer.location;
+    customer.amount = car ? car.price : customer.amount;
+
+    const updatedCustomer = await customer.save();
+    res.json({
+      success: true,
+      message: "Thông tin Khách Hàng đã được cập nhật",
+      customer: updatedCustomer,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Đã xảy ra lỗi khi cập nhật thông tin khách hàng",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
   }
 });
 

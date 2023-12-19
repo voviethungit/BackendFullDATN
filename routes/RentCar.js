@@ -9,7 +9,7 @@ const RentalHistory = require("../models/RentalHistory");
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
 
-router.post("/rent-car/:userId/:carId",verifyToken, async (req, res) => {
+router.post("/rent-car/:userId/:carId", verifyToken, async (req, res) => {
   const userId = req.params.userId;
   const carId = req.params.carId;
 
@@ -18,11 +18,9 @@ router.post("/rent-car/:userId/:carId",verifyToken, async (req, res) => {
     const car = await Car.findById(carId);
 
     if (!user || !car) {
-      return res
-        .status(404)
-        .json({
-          message: "Không tìm thấy thông tin người dùng hoặc thông tin xe",
-        });
+      return res.status(404).json({
+        message: "Không tìm thấy thông tin người dùng hoặc thông tin xe",
+      });
     }
 
     if (user.accountBalance >= car.price) {
@@ -41,6 +39,7 @@ router.post("/rent-car/:userId/:carId",verifyToken, async (req, res) => {
 
       await rentalRecord.save();
       car.isAvailable = false;
+      car.usage = (parseInt(car.usage) || 0) + 1; 
       await car.save();
       return res.status(200).json({ message: "Thành Công !", rentalRecord });
     } else {
@@ -97,12 +96,10 @@ router.put("/rental-history/:id", verifyToken, checkAdmin, async (req, res) => {
       return res.status(404).json({ message: "404 NOT FOUND" });
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Cập nhật thông tin hoá đơn thành công!",
-        rentalRecord,
-      });
+    res.status(200).json({
+      message: "Cập nhật thông tin hoá đơn thành công!",
+      rentalRecord,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi server" });
@@ -117,25 +114,25 @@ router.put(
     const rentalHistoryId = req.params.id;
     try {
       const rentalhistory = await RentalHistory.findById(rentalHistoryId);
-  
+
       if (!rentalhistory) {
         return res.status(404).json({
           success: false,
           message: "Không tìm thấy Lịch Sử Thuê",
         });
       }
-  
+
       if (rentalhistory.isDelete === "deleted") {
         return res.status(400).json({
           success: false,
           message: "LỊCH SỬ THUÊ đã được đánh dấu là đã xóa trước đó",
         });
       }
-  
+
       rentalhistory.isDelete = "deleted";
-  
+
       const updaterental = await rentalhistory.save();
-  
+
       res.json({
         success: true,
         message: "LỊCH SỬ THUÊ đã được đánh dấu là đã xóa",

@@ -5,18 +5,24 @@ require("../models/Category");
 const Category = mongoose.model("Category");
 const verifyToken = require("../middleware/auth");
 const checkAdmin = require("../middleware/checkAdmin");
-
+const multer = require("multer");
+const admin = require("firebase-admin");
+const { v4: uuidv4 } = require("uuid");
+const uuid = uuidv4();
+metadata: {
+  firebaseStorageDownloadTokens: uuid;
+}
 // API GET ONE CATEGORY
 router.get("/category/:id", async (req, res) => {
   const CategoryId = req.params.id;
-try {
+  try {
     const category = await Category.findById(CategoryId);
     if (!category) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy xe" });
     }
-    res.json({ success: true , Category : category })
+    res.json({ success: true, Category: category });
   } catch (error) {
     console.log(error);
     res
@@ -24,28 +30,92 @@ try {
       .json({ success: false, message: "Lỗi Server! Liên Hệ Admin" });
   }
 });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 // API ADD CATEGORY
-router.post("/add-category", verifyToken, checkAdmin, async (req, res) => {
-  const { model, imageCategory } = req.body;
-  if (!model)
-    return res
-      .status(400)
-      .json({ success: false, message: "Vui lòng nhập tên danh mục !" });
+router.post(
+  "/add-category",
+  upload.single("imageCategory"),
+  verifyToken,
+  checkAdmin,
+  async (req, res) => {
+    const { model } = req.body;
+    const imageCategory = req.file; 
 
-  try {
-    const newCategory = new Category({
-      model,
-      imageCategory,
-    });
+    if (!model)
+      return res
+        .status(400)
+        .json({ success: false, message: "Vui lòng nhập tên danh mục !" });
 
-    await newCategory.save();
+    try {
+      let imageUrl = "";
+      if (imageCategory) {
+        const bucket = admin.storage().bucket();
+        const imageFileName = `${Date.now()}_${imageCategory.originalname}`;
+        const fileUpload = bucket.file(imageFileName);
 
-    res.json({ success: true, message: "THANH CONG!", model: newCategory });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Lỗi từ phía server !" });
+        const blobStream = fileUpload.createWriteStream({
+          metadata: {
+            contentType: imageCategory.mimetype,
+          },
+        });
+
+        blobStream.on("error", (error) => {
+          console.error(error);
+          return res.status(500).json({
+            success: false,
+            message: "Lỗi khi tải ảnh lên Firebase Storage!",
+          });
+        });
+
+        blobStream.on("finish", async () => {
+          try {
+            imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
+
+            const newCategory = new Category({
+              model,
+              imageCategory: imageUrl,
+            });
+
+            await newCategory.save();
+
+            res.json({
+              success: true,
+              message: "THANH CONG!",
+              model: newCategory,
+            });
+          } catch (error) {
+            console.error(error);
+            res
+              .status(500)
+              .json({
+                success: false,
+                message: "Lỗi từ phía server khi thêm danh mục!",
+              });
+          }
+        });
+
+        blobStream.end(imageCategory.buffer);
+      } else {
+        const newCategory = new Category({
+          model,
+        });
+
+        await newCategory.save();
+
+        res.json({ success: true, message: "THANH CONG!", model: newCategory });
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Lỗi từ phía server khi thêm danh mục!",
+        });
+    }
   }
-});
+);
 
 // API GET ALL CATEGORY
 router.get("/all-category", async (req, res) => {

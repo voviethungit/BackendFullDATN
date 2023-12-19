@@ -21,6 +21,7 @@ const countRouter = require("./routes/CountDev");
 const rentRouter = require("./routes/RentCar");
 const customerRouter = require("./routes/Customer");
 const favotireRouter = require("./routes/Favorite");
+const hungdevRouter = require("./routes/AccountBalance");
 const admin = require("firebase-admin");
 const { v4: uuidv4 } = require("uuid");
 const uuid = uuidv4();
@@ -95,6 +96,7 @@ app.use("/", favotireRouter);
 // API GPLX
 app.use("/", verifyUserRouter);
 
+app.use("/", hungdevRouter);
 // API SERVER
 app.listen(process.env.PORT, () => {
   console.log(

@@ -56,6 +56,7 @@ const CarsSchema = new Schema({
    },
    star: {
     type: Number,
+    default: "0"
   },
    usage: {
     type: String,

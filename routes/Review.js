@@ -73,20 +73,42 @@ router.put('/reviews/:id',verifyToken, checkAdmin, async (req, res) => {
     if (!updatedReview) {
       return res.status(404).json({ message: 'Review not found' });
     }
-    res.status(200).json(updatedReview); // Return the updated review
+    res.status(200).json(updatedReview);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-router.delete('/reviews/:id', verifyToken, checkAdmin, async (req, res) => {
+router.put('/delete-reviews/:id', verifyToken, checkAdmin, async (req, res) => {
+  const reviewId = req.params.id;
   try {
-    const deletedReview = await Review.findByIdAndDelete(req.params.id);
-    if (!deletedReview) {
-      return res.status(404).json({ message: 'Review not found' });
+    const review = await Review.findById(reviewId);
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy bình luận",
+      });
     }
-    res.status(200).json({ message: 'Review deleted' });
+
+    if (review.status === "deleted") {
+      return res.status(400).json({
+        success: false,
+        message: "bình luận đã được đánh dấu là đã xóa trước đó",
+      });
+    }
+
+    review.status = "deleted";
+
+    const updatedreview = await review.save();
+
+    res.json({
+      success: true,
+      message: "Bình luận đã được đánh dấu là đã xóa",
+      car: updatedreview,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server" });
   }
 });
 

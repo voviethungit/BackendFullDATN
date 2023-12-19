@@ -239,6 +239,30 @@ router.put("/update-car/:id", verifyToken, checkAdmin, upload.fields([
     res.status(500).json({ success: false, message: "Lỗi từ phía server" });
   }
 });
+// API GET CAR BY CATEGORY ID
+router.get("/get-car-by-category/:categoryId", async (req, res) => {
+  const categoryId = req.params.categoryId;
+
+  try {
+    const cars = await Car.find({
+      status: { $ne: "deleted" },
+      isAvailable: true,
+      categoryID: categoryId,
+    });
+
+    if (!cars || cars.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe trong danh mục này",
+      });
+    }
+
+    res.json({ success: true, cars });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Lỗi từ phía server!" });
+  }
+});
 
 // API GET DELETED CARS
 router.get("/get-deleted-cars", verifyToken, checkAdmin, async (req, res) => {
