@@ -14,15 +14,15 @@ metadata: {
 }
 // API GET ONE CATEGORY
 router.get("/category/:id", async (req, res) => {
-  const CategoryId = req.params.id;
+  const categoryId = req.params.id;
   try {
-    const category = await Category.findById(CategoryId);
+    const category = await Category.findById(categoryId);
     if (!category) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy xe" });
     }
-    res.json({ success: true, Category: category });
+    res.json({ success: true, category: category });
   } catch (error) {
     console.log(error);
     res

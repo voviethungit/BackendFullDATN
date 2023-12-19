@@ -186,6 +186,7 @@ router.post("/login", async (req, res) => {
       accessToken,
       userId: user._id,
       isAdmin: user.isAdmin,
+      status: user.status,
     });
   } catch (error) {
     console.log(error);

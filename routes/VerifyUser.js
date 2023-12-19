@@ -9,7 +9,6 @@ const VerifyUser = mongoose.model("VerifyUser");
 const checkAdmin = require("../middleware/checkAdmin");
 const multer = require("multer");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 const uuid = uuidv4();
 metadata: {
@@ -36,7 +35,7 @@ router.get("/get-gplx/:userId", verifyToken, async (req, res) => {
     const verifyUser = await VerifyUser.findOne({ userId: userId });
 
     if (!verifyUser) {
-      return res.status(404).json({ message: "Không tìm thấy VerifyUser" });
+      return res.status(404).json({ message: "Không tìm thấy giấy phép lái xe của người dùng" });
     }
 
     res.json(verifyUser);
@@ -45,6 +44,29 @@ router.get("/get-gplx/:userId", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/check-gplx/:userId", verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    if (!userId) {
+      return res.status(400).json({ message: "UserId không hợp lệ" });
+    }
+
+    const verifyUser = await VerifyUser.findOne({ userId: userId });
+
+    if (!verifyUser) {
+      return res.status(404).json({ message: "Không tìm thấy giấy phép lái xe của người dùng" });
+    }
+
+    if (verifyUser.status === 'Đã Xác Nhận') {
+      res.json({ hasDrivingLicense: true, status: 'Đã Xác Nhận' });
+    } else {
+      res.json({ hasDrivingLicense: true, status: 'Chờ Xác Nhận' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 router.post(

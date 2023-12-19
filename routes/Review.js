@@ -39,7 +39,7 @@ router.post('/reviews',verifyToken, async (req, res) => {
 
 router.get('/reviews', async (req, res) => {
   try {
-    const reviews = await Review.find(); 
+    const reviews = await Review.find({status: { $ne: "deleted" }}); 
     res.status(200).json(reviews); 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -50,7 +50,7 @@ router.get('/reviews', async (req, res) => {
 router.get('/reviews/:carId', async (req, res) => {
   const carId = req.params.carId;
   try {
-    const reviews = await Review.find({ car: carId });
+    const reviews = await Review.find({ car: carId, status: { $ne: "deleted" } });
     if (reviews.length === 0) {
       return res.status(404).json({ message: 'No reviews found for this car' });
     }
@@ -78,7 +78,7 @@ router.put('/reviews/:id',verifyToken, checkAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-router.put('/delete-reviews/:id', verifyToken, checkAdmin, async (req, res) => {
+router.put("/delete-reviews/:id", verifyToken, checkAdmin, async (req, res) => {
   const reviewId = req.params.id;
   try {
     const review = await Review.findById(reviewId);

@@ -28,6 +28,7 @@ router.post("/upload-blog", upload.single("imageBlog"), verifyToken, checkAdmin,
     }
   
     try {
+      const bucket = admin.storage().bucket();
       const imageFileName = `${Date.now()}_${imageBlog.originalname}`;
       const fileUpload = bucket.file(imageFileName);
   
@@ -47,7 +48,7 @@ router.post("/upload-blog", upload.single("imageBlog"), verifyToken, checkAdmin,
   
       blobStream.on("finish", async () => {
         try {
-          const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${fileUpload.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
+          const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${fileUpload.name}?alt=media&token=${uuid}`;
   
           const newBlog = new Blog({
             title,
